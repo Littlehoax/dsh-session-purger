@@ -27,16 +27,19 @@ DSH 的会话菜单只能归档，不能删除本地记录。这个插件在会�
 
 要求：DSH 桌面版 `0.2.2-rc.1`（Web profile + JSONL 会话存储）。
 
-用插件管理安装，target 支持以下形式：
+#### 桌面端内添加（推荐）
 
-| 来源 | 示例 |
-| --- | --- |
-| 本地目录 | `C:\path\to\dsh-session-purger` |
-| 压缩包 | `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz` |
-| Git 仓库 | `Littlehoax/dsh-session-purger` |
-| npm | 暂未发布 |
+1. 打开 **设置 → 插件**
+2. 点 **Add plugin**
+3. 在输入框粘贴下面任一地址，点 **Install**：
+   - GitHub 仓库：`Littlehoax/dsh-session-purger`（或 `https://github.com/Littlehoax/dsh-session-purger.git`）
+   - Release 压缩包：`https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz`
+   - 本地目录：`C:\path\to\dsh-session-purger`（绝对路径）
+4. 安装完成后点 **Enable now**；如果菜单项没出现，刷新一次页面（Ctrl+R）
 
-目录安装是 `link:` 依赖，不要删除或移动该目录。安装后客户端部分会热加载；如果菜单没出现，刷新一次页面。
+#### 其它安装方式
+
+插件管理接口（`plugin_manager.install_bundle` / `dsh plugin add`）接受同样的地址，也支持 `file:` / `link:` 前缀和 npm 上的 `name[@range]`。目录安装创建的是 `link:` 依赖，不要删除或移动该目录。
 
 ### 使用
 
@@ -77,16 +80,19 @@ DSH can archive a conversation but never delete its local history. This plugin a
 
 Requires DSH desktop `0.2.2-rc.1` (Web profile with JSONL session persistence).
 
-Install through the plugin manager with one of these targets:
+#### From the desktop app (recommended)
 
-| Source | Example |
-| --- | --- |
-| Local directory | `C:\path\to\dsh-session-purger` |
-| Tarball | `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz` |
-| Git repository | `Littlehoax/dsh-session-purger` |
-| npm | not published yet |
+1. Open **Settings → Plugins**
+2. Click **Add plugin**
+3. Paste one of these addresses and click **Install**:
+   - GitHub repository: `Littlehoax/dsh-session-purger` (or `https://github.com/Littlehoax/dsh-session-purger.git`)
+   - Release tarball: `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz`
+   - Local directory: `C:\path\to\dsh-session-purger` (absolute path)
+4. Click **Enable now** when it finishes; reload the page (Ctrl+R) if the menu row is missing
 
-A directory install is a `link:` dependency — keep the directory in place. The client half hot-loads; if the menu entry is missing, reload the page once.
+#### Other installation paths
+
+The plugin manager API (`plugin_manager.install_bundle` / `dsh plugin add`) takes the same specs, plus `file:` / `link:` prefixes and npm `name[@range]`. A directory install creates a `link:` dependency — keep the directory in place.
 
 ### Usage
 
