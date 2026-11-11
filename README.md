@@ -1,119 +1,107 @@
 # dsh-session-purger
 
 Permanently delete conversations from the DeepSeek Harness Web sidebar.
+从 DeepSeek Harness Web 侧边栏永久删除对话。
 
-The built-in sidebar can archive a conversation, but never remove its local
-history. This plugin adds a **Delete conversation** action to every session's
-`…` menu, with a confirmation dialog. Confirming removes the session from the
-sidebar immediately and deletes its persisted log from disk.
+- [中文](#中文)
+- [English](#english)
 
-## Features
+---
 
-- **Delete conversation** row in the session `…` menu, using the built-in
-  trash glyph so it matches the other menu rows.
-- Confirmation dialog rendered in the harness overlay layer (no `window.confirm`).
-- Stops a running agent for that session before deletion.
-- Removes the live session entry, so the row disappears without a page reload.
-- Moves the session directory to a sibling trash folder first, then removes it
-  in the background — this survives the open append handle that the JSONL
-  persistence backend keeps on Windows.
-- Cleans up the pin state best-effort; a deleted session never reappears.
+## 中文
 
-## Requirements
+### 简介
 
-- DeepSeek Harness **desktop**, `0.2.2-rc.1` (the `engines.dsh` range allows
-  `>=0.2.2-rc.1 <0.3.0`).
-- The Web profile with the built-in JSONL session persistence (the desktop
-  default). The plugin relies on the `session.v4.jsonl[.zstd]` directory layout.
-- The built-in sidebar / context-menu client plugins, which are part of
-  `@deepseek-ai/dsh-web-app`.
+DSH 的会话菜单只能归档，不能删除本地记录。这个插件在会话的“…”菜单里加一项 **删除对话**：确认后立即从侧边栏移除，并删除磁盘上的会话日志。
 
-## Install
+### 功能
 
-Use the plugin manager in the harness (Settings → Plugins → install bundle), or
-ask the harness agent to call `plugin_manager install_bundle` with one of:
+- 会话“…”菜单中的“删除对话”，使用内置垃圾桶图标，风格与其它菜单项一致
+- 自定义确认弹窗，不使用 `window.confirm`
+- 先停止该会话正在运行的 agent
+- 立即移除侧边栏行，无需刷新页面
+- 先把会话目录移到回收目录，再后台删除，兼容 JSONL 持久化打开的写入句柄
+- 尽力清理置顶状态
 
-| Source | `target` example |
+### 安装
+
+要求：DSH 桌面版 `0.2.2-rc.1`（Web profile + JSONL 会话存储）。
+
+用插件管理安装，target 支持以下形式：
+
+| 来源 | 示例 |
 | --- | --- |
-| Local checkout | `C:\path\to\dsh-session-purger` (absolute path) |
-| Tarball file | `C:\path\to\dsh-session-purger-0.1.0.tgz` |
-| Tarball URL | `https://example.com/dsh-session-purger-0.1.0.tgz` |
-| Git repository | `github:Littlehoax/dsh-session-purger` |
-| npm registry | `dsh-session-purger@0.1.0` |
+| 本地目录 | `C:\path\to\dsh-session-purger` |
+| 压缩包 | `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz` |
+| Git 仓库 | `Littlehoax/dsh-session-purger` |
+| npm | 暂未发布 |
 
-A local directory install is a `link:` dependency: keep the directory where it
-is. A tarball or registry install is copied into the profile.
+目录安装是 `link:` 依赖，不要删除或移动该目录。安装后客户端部分会热加载；如果菜单没出现，刷新一次页面。
 
-After installation the host half is hot-reloaded; the client half appears in the
-page immediately. If the menu entry is missing, reload the page once.
+### 使用
 
-## Usage
+1. 打开任意会话右侧的“…”菜单
+2. 点击 **删除对话**
+3. 确认
 
-1. Open the `…` menu of any conversation in the sidebar.
-2. Click **Delete conversation**.
-3. Confirm. The row disappears and the log directory is removed.
+删除是永久的，没有撤销，也没有回收站界面。
 
-Deletion is permanent — there is no undo and no trash UI.
+### 兼容性
 
-## How it works
+插件使用了 DSH 的内部接口（`sessionPersistence.stat()`、session store 的 `detach()`、`api-session/removed`、Typert remote marker、`contextMenus`、`shell.overlay`）。DSH 大版本升级后可能失效；`engines.dsh` 会让不兼容的安装直接失败。
 
-- Host half: `index.js` provides a `sessionDelete` service (`ctx.provide`) with a
-  manually attached Typert remote marker, so the client can call
-  `sessionDelete/delete` over the gateway without any `@deepseek-ai/*` imports
-  (the installed plugin must run from the profile, which has no framework
-  packages).
-- The service validates the id, reads `sessionPersistence.stat(sessionId)`,
-  refuses sessions whose writer is mid-append, cancels the agent, detaches the
-  live session entry and emits `api-session/removed`.
-- The session directory is derived from `stat.location.path` when the log is
-  materialized, otherwise from the header cwd, with a scan over the session root
-  as fallback.
-- The directory is renamed into `dirname(sessionRoot)/.dsh-session-trash/` and
-  removed asynchronously with retries; the trash folder lives outside the session
-  root so the persistence lister never sees it.
-- Client half: `client.js` loads as a Web client module, registers the
-  `session.delete` context-menu contribution (target `session`, order 700), and
-  renders the confirmation dialog through the `shell.overlay` slot.
+仅支持 JSONL 持久化的 `session.v4` 目录布局。
 
-The icon reuses the built-in `workspace.delete` glyph key, so it matches the
-other sidebar menu icons without shipping an icon font.
+### 许可证
 
-## Compatibility and caveats
+MIT
 
-- Uses internal seams (`sessionPersistence.stat().location`, the session store's
-  `detach()`, `api-session/removed`, the source-mode Typert remote marker,
-  `contextMenus`, `shell.overlay`). A future harness release may move these;
-  `engines.dsh` makes an incompatible install fail loudly instead of half
-  working.
-- Only the JSONL persistence layout is supported. A different persistence
-  backend or a different on-disk naming scheme makes deletion report
-  `session-delete/io-failed`.
-- The directory rename trick assumes the session root is writable.
-- Session search indexes are query-time; the next list refresh no longer
-  includes the deleted id.
+---
 
-## Development
+## English
 
-```bash
-# syntax check the host and client bundles
-node --check index.js
-cp client.js client.mjs && node --check client.mjs && rm client.mjs
+### What it is
 
-# build the distributable tarball
-pnpm pack
-```
+DSH can archive a conversation but never delete its local history. This plugin adds a **Delete conversation** action to every session's `…` menu. Confirming removes the session from the sidebar and deletes its log from disk.
 
-Layout:
+### Features
 
-```
-index.js           host service (no external imports)
-client.js          Web client module (window.__ModuleLoader__)
-cordis.patch.yml   bundle patch row
-locale/en.json     English metadata
-locale/zh.json     Chinese metadata
-icon.svg           package icon
-```
+- **Delete conversation** row in the session `…` menu, using the built-in trash glyph to match the other rows
+- Custom confirmation dialog (no `window.confirm`)
+- Stops a running agent for that session before deletion
+- Removes the sidebar row immediately, no reload needed
+- Moves the session directory to a trash folder first, then deletes it in the background, tolerating the open JSONL writer handle
+- Best-effort pin cleanup
 
-## License
+### Install
+
+Requires DSH desktop `0.2.2-rc.1` (Web profile with JSONL session persistence).
+
+Install through the plugin manager with one of these targets:
+
+| Source | Example |
+| --- | --- |
+| Local directory | `C:\path\to\dsh-session-purger` |
+| Tarball | `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz` |
+| Git repository | `Littlehoax/dsh-session-purger` |
+| npm | not published yet |
+
+A directory install is a `link:` dependency — keep the directory in place. The client half hot-loads; if the menu entry is missing, reload the page once.
+
+### Usage
+
+1. Open the `…` menu of any conversation
+2. Click **Delete conversation**
+3. Confirm
+
+Deletion is permanent. There is no undo and no trash UI.
+
+### Compatibility
+
+The plugin relies on internal DSH seams (`sessionPersistence.stat()`, the session store's `detach()`, `api-session/removed`, the Typert remote marker, `contextMenus`, `shell.overlay`). A future DSH release may break it; `engines.dsh` makes an incompatible install fail loudly.
+
+Only the JSONL `session.v4` on-disk layout is supported.
+
+### License
 
 MIT
