@@ -29,23 +29,33 @@ DSH 的会话菜单只能归档，不能删除本地记录。这个插件在会�
 
 打开 **设置 → 插件**，点 **Add plugin**，粘贴下面任一地址后点 **Install**；完成后点 **Enable now**，菜单没出现就刷新页面（Ctrl+R）。
 
-#### 方式一：Release 压缩包（推荐，无需 Git）
+#### 方式一：输入插件名（推荐）
+
+在 **Add plugin** 输入框里填：
+
+```
+dsh-session-purger
+```
+
+点 **Install**。名字来自 npm，任何电脑都可用，不需要 Git，也不需要 GitHub 账号。
+
+#### 方式二：Release 压缩包（无需 Git）
 
 ```
 https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz
 ```
 
-#### 方式二：本地压缩包或目录（离线）
+#### 方式三：本地压缩包或目录（离线）
 
 先下载上面的 `.tgz`，在输入框填它的绝对路径，例如 `C:\Users\you\Downloads\dsh-session-purger-0.1.0.tgz`；也可以直接填插件目录的绝对路径。
 
-#### 方式三：GitHub 仓库（需要本机已安装 Git）
+#### 方式四：GitHub 仓库（需要本机已安装 Git）
 
 ```
 Littlehoax/dsh-session-purger
 ```
 
-没装 Git 时 pnpm 会报 `ERR_PNPM_GIT_RESOLVE_FAILED`（`git ls-remote failed`），请改用方式一或方式二。目录安装创建的是 `link:` 依赖，不要删除或移动该目录。插件管理接口（`plugin_manager.install_bundle` / `dsh plugin add`）同样接受这些地址。
+没装 Git 时 pnpm 会报 `ERR_PNPM_GIT_RESOLVE_FAILED`（`git ls-remote failed`），请改用方式一至三。目录安装创建的是 `link:` 依赖，不要删除或移动该目录。插件管理接口（`plugin_manager.install_bundle` / `dsh plugin add`）同样接受这些地址。
 
 ### 使用
 
@@ -88,23 +98,33 @@ Requires DSH desktop `0.2.2-rc.1` (Web profile with JSONL session persistence).
 
 Open **Settings → Plugins**, click **Add plugin**, paste one of the addresses below and click **Install**; click **Enable now** when it finishes, then reload the page (Ctrl+R) if the menu row is missing.
 
-#### Option 1: release tarball (recommended, no Git needed)
+#### Option 1: package name (recommended)
+
+Enter this in the **Add plugin** field:
+
+```
+dsh-session-purger
+```
+
+then click **Install**. The name resolves from npm, so it works on any machine — no Git and no GitHub account required.
+
+#### Option 2: release tarball (no Git needed)
 
 ```
 https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz
 ```
 
-#### Option 2: local tarball or directory (offline)
+#### Option 3: local tarball or directory (offline)
 
 Download the `.tgz` above and enter its absolute path, e.g. `C:\Users\you\Downloads\dsh-session-purger-0.1.0.tgz`; an absolute path to the plugin directory works too.
 
-#### Option 3: GitHub repository (requires Git installed)
+#### Option 4: GitHub repository (requires Git installed)
 
 ```
 Littlehoax/dsh-session-purger
 ```
 
-Without Git, pnpm fails with `ERR_PNPM_GIT_RESOLVE_FAILED` (`git ls-remote failed`) — use option 1 or 2. A directory install creates a `link:` dependency, so keep the directory in place. The plugin manager API (`plugin_manager.install_bundle` / `dsh plugin add`) accepts these specs as well.
+Without Git, pnpm fails with `ERR_PNPM_GIT_RESOLVE_FAILED` (`git ls-remote failed`) — use options 1–3. A directory install creates a `link:` dependency, so keep the directory in place. The plugin manager API (`plugin_manager.install_bundle` / `dsh plugin add`) accepts these specs as well.
 
 ### Usage
 
