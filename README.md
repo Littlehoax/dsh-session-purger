@@ -1,68 +1,64 @@
 # dsh-session-purger
 
-在 DSH Web 侧边栏中永久删除对话。
 Permanently delete conversations from the DSH Web sidebar.
+从 DSH Web 侧边栏里彻底删除对话。
 
 ## 中文
 
-### 功能
+### 这个插件做什么
 
-- 在会话的“…”菜单里加一项 **删除对话**，使用内置垃圾桶图标，与其它菜单项风格一致
-- 确认后立即从侧边栏移除，并删除磁盘上的会话记录
-- 删除前先停止该会话正在运行的 agent
-- 自己的确认弹窗（不用 `window.confirm`），没有撤销
-- 兼容 JSONL 持久化打开的写入句柄；尽力清理置顶状态
+DSH 的会话菜单里只有“归档”。归档只是把对话从侧边栏藏起来，磁盘上的记录还在。
+
+这个插件补上真正删除的能力：在会话的“…”菜单里加一项 **删除对话**。确认之后，对话会立刻从侧边栏消失，对应的会话记录也会从磁盘上删掉。
+
+删除前会先停掉这个会话正在运行的 agent，免得一边写一边删。确认框是插件自带的小弹窗，不会弹系统那种 `window.confirm`。
 
 ### 安装
 
-要求 DSH 桌面版 `0.2.2-rc.1`。
+需要 DSH 桌面版 `0.2.2-rc.1`。
 
-打开 **设置 → 插件 → Add plugin**，输入：
+打开 **设置 → 插件 → Add plugin**，输入 `dsh-session-purger`，点 **Install**，再点 **Enable now** 就行，不需要装 Git。
 
-```
-dsh-session-purger
-```
-
-点 **Install**，再点 **Enable now**。不需要 Git。
-
-离线或访问 GitHub 受限时，也可以改用 Release 的 `.tgz` 地址或本地绝对路径安装。
+如果所在网络访问 npm 或 GitHub 不方便，也可以去 Release 页面下载 `.tgz`，用本地文件安装。
 
 ### 使用
 
-会话右侧“…”→ **删除对话** → 确认。删除不可恢复。
+在会话右侧点“…”→ **删除对话** → 确认。
+
+删掉就没了，没有撤销，也没有回收站。删之前想清楚。
 
 ### 兼容性
 
-仅支持 JSONL `session.v4` 布局；依赖 DSH 内部会话接口，大版本升级可能失效。MIT。
+目前适配的是 JSONL 的 `session.v4` 存储格式，并用到了几个 DSH 内部接口，所以 DSH 大版本升级之后有可能失效。真遇到问题，欢迎开 issue。
+
+MIT 许可。
 
 ## English
 
-### Features
+### What it does
 
-- **Delete conversation** row in the session `…` menu, using the built-in trash icon to match the other rows
-- Removes the sidebar row immediately and deletes the on-disk session log
-- Stops a running agent for that session first
-- Custom confirmation dialog, no undo
-- Tolerates the open JSONL writer handle; best-effort pin cleanup
+DSH's session menu can archive a conversation, but archiving only hides it from the sidebar — the log stays on disk.
+
+This plugin adds the missing piece: a **Delete conversation** action in the session's `…` menu. Once you confirm, the row disappears from the sidebar immediately and the session log is removed from disk.
+
+Before deleting, it stops any agent still running for that session, so nothing keeps writing to the file while it is being removed. The confirmation is a small in-app dialog rather than a `window.confirm`.
 
 ### Install
 
 Requires DSH desktop `0.2.2-rc.1`.
 
-Open **Settings → Plugins → Add plugin** and enter:
+Open **Settings → Plugins → Add plugin**, enter `dsh-session-purger`, then click **Install** and **Enable now**. No Git needed.
 
-```
-dsh-session-purger
-```
-
-Click **Install**, then **Enable now**. No Git needed.
-
-If offline or GitHub is blocked, install from the release `.tgz` URL or a local absolute path instead.
+If npm or GitHub is hard to reach from your network, download the `.tgz` from the release page and install from that local file instead.
 
 ### Usage
 
-Session `…` menu → **Delete conversation** → confirm. Permanent, no undo.
+Session `…` menu → **Delete conversation** → confirm.
+
+Once deleted, it's gone — no undo and no trash bin. Make sure that's what you want.
 
 ### Compatibility
 
-JSONL `session.v4` layout only; relies on internal DSH seams and may break on a major DSH upgrade. MIT.
+Built for the JSONL `session.v4` layout and a few internal DSH seams, so a major DSH update may break it. If that happens, please open an issue.
+
+MIT.
