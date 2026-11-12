@@ -1,7 +1,7 @@
 {
   "name": "dsh-session-purger",
-  "version": "0.1.0",
-  "description": "Permanently delete conversations from the DeepSeek Harness Web sidebar.",
+  "version": "0.1.1",
+  "description": "Permanently delete conversations from the DSH Web sidebar.",
   "type": "module",
   "license": "MIT",
   "keywords": [
