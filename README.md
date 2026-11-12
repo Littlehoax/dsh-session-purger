@@ -27,19 +27,25 @@ DSH 的会话菜单只能归档，不能删除本地记录。这个插件在会�
 
 要求：DSH 桌面版 `0.2.2-rc.1`（Web profile + JSONL 会话存储）。
 
-#### 桌面端内添加（推荐）
+打开 **设置 → 插件**，点 **Add plugin**，粘贴下面任一地址后点 **Install**；完成后点 **Enable now**，菜单没出现就刷新页面（Ctrl+R）。
 
-1. 打开 **设置 → 插件**
-2. 点 **Add plugin**
-3. 在输入框粘贴下面任一地址，点 **Install**：
-   - GitHub 仓库：`Littlehoax/dsh-session-purger`（或 `https://github.com/Littlehoax/dsh-session-purger.git`）
-   - Release 压缩包：`https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz`
-   - 本地目录：`C:\path\to\dsh-session-purger`（绝对路径）
-4. 安装完成后点 **Enable now**；如果菜单项没出现，刷新一次页面（Ctrl+R）
+#### 方式一：Release 压缩包（推荐，无需 Git）
 
-#### 其它安装方式
+```
+https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz
+```
 
-插件管理接口（`plugin_manager.install_bundle` / `dsh plugin add`）接受同样的地址，也支持 `file:` / `link:` 前缀和 npm 上的 `name[@range]`。目录安装创建的是 `link:` 依赖，不要删除或移动该目录。
+#### 方式二：本地压缩包或目录（离线）
+
+先下载上面的 `.tgz`，在输入框填它的绝对路径，例如 `C:\Users\you\Downloads\dsh-session-purger-0.1.0.tgz`；也可以直接填插件目录的绝对路径。
+
+#### 方式三：GitHub 仓库（需要本机已安装 Git）
+
+```
+Littlehoax/dsh-session-purger
+```
+
+没装 Git 时 pnpm 会报 `ERR_PNPM_GIT_RESOLVE_FAILED`（`git ls-remote failed`），请改用方式一或方式二。目录安装创建的是 `link:` 依赖，不要删除或移动该目录。插件管理接口（`plugin_manager.install_bundle` / `dsh plugin add`）同样接受这些地址。
 
 ### 使用
 
@@ -80,19 +86,25 @@ DSH can archive a conversation but never delete its local history. This plugin a
 
 Requires DSH desktop `0.2.2-rc.1` (Web profile with JSONL session persistence).
 
-#### From the desktop app (recommended)
+Open **Settings → Plugins**, click **Add plugin**, paste one of the addresses below and click **Install**; click **Enable now** when it finishes, then reload the page (Ctrl+R) if the menu row is missing.
 
-1. Open **Settings → Plugins**
-2. Click **Add plugin**
-3. Paste one of these addresses and click **Install**:
-   - GitHub repository: `Littlehoax/dsh-session-purger` (or `https://github.com/Littlehoax/dsh-session-purger.git`)
-   - Release tarball: `https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz`
-   - Local directory: `C:\path\to\dsh-session-purger` (absolute path)
-4. Click **Enable now** when it finishes; reload the page (Ctrl+R) if the menu row is missing
+#### Option 1: release tarball (recommended, no Git needed)
 
-#### Other installation paths
+```
+https://github.com/Littlehoax/dsh-session-purger/releases/download/v0.1.0/dsh-session-purger-0.1.0.tgz
+```
 
-The plugin manager API (`plugin_manager.install_bundle` / `dsh plugin add`) takes the same specs, plus `file:` / `link:` prefixes and npm `name[@range]`. A directory install creates a `link:` dependency — keep the directory in place.
+#### Option 2: local tarball or directory (offline)
+
+Download the `.tgz` above and enter its absolute path, e.g. `C:\Users\you\Downloads\dsh-session-purger-0.1.0.tgz`; an absolute path to the plugin directory works too.
+
+#### Option 3: GitHub repository (requires Git installed)
+
+```
+Littlehoax/dsh-session-purger
+```
+
+Without Git, pnpm fails with `ERR_PNPM_GIT_RESOLVE_FAILED` (`git ls-remote failed`) — use option 1 or 2. A directory install creates a `link:` dependency, so keep the directory in place. The plugin manager API (`plugin_manager.install_bundle` / `dsh plugin add`) accepts these specs as well.
 
 ### Usage
 
