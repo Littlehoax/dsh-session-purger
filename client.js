@@ -5,7 +5,7 @@
  *  - "Delete conversation"      → `sessionDelete/delete`
  *  - "Delete conversation and artifacts" → `sessionDelete/artifacts` preview,
  *                                  then `sessionDelete/purge`
- *  - The scissors button in each assistant message's icon row (beside Copy)
+ *  - The scissors button in each user message's icon row (beside Copy)
  *                                 → `sessionDelete/outlines` picker, then
  *                                  `sessionDelete/truncate` (cut to the end) or
  *                                  `sessionDelete/removeRange` (an interior slice)
@@ -23,7 +23,7 @@ window.__ModuleLoader__.load({
       "menu.delete": "删除对话",
       "menu.purge": "删除对话和全部产物",
       "action.slice": "删除这一段对话",
-      "action.slice.hint": "从本轮开始删到末尾",
+      "action.slice.hint": "从这个提问起，删到对话末尾",
       "delete.title": "删除对话？",
       "delete.body": "“{title}”将从此设备删除，且无法恢复。",
       "delete.hint": "对话记录会从本机永久移除。",
@@ -74,7 +74,7 @@ window.__ModuleLoader__.load({
       "menu.delete": "Delete conversation",
       "menu.purge": "Delete conversation and artifacts",
       "action.slice": "Delete part of this conversation",
-      "action.slice.hint": "Remove this turn and everything after it",
+      "action.slice.hint": "Delete this question and everything after it",
       "delete.title": "Delete conversation?",
       "delete.body": "“{title}” will be deleted from this device. This cannot be undone.",
       "delete.hint": "The conversation history is removed permanently.",
@@ -341,9 +341,9 @@ window.__ModuleLoader__.load({
 
         /**
          * Open the slice picker for one conversation, pre-selecting the turn of
-         * the message whose action row was clicked.
+         * the question whose action row was clicked.
          */
-        const openSliceAt = (sessionId, messageId) => {
+        const openSliceAtTurn = (sessionId, turn) => {
           if (typeof sessionId !== "string" || sessionId === "") return;
           publish({
             kind: "slice",
@@ -359,12 +359,8 @@ window.__ModuleLoader__.load({
           void (async () => {
             try {
               const outline = await call("outlines", { targetSessionId: sessionId });
-              let from = null;
-              if (typeof messageId === "string" && messageId !== "") {
-                const match = outline.turns.find((turn) => turn.messageId === messageId);
-                if (match !== undefined) from = match.turn;
-              }
-              patch("slice", sessionId, { outline, from, phase: "confirm" });
+              const known = outline.turns.some((item) => item.turn === turn);
+              patch("slice", sessionId, { outline, from: known ? turn : null, phase: "confirm" });
             } catch (error) {
               patch("slice", sessionId, { phase: "confirm", message: errorText(tn, error) });
             }
@@ -657,8 +653,12 @@ window.__ModuleLoader__.load({
           );
         });
 
-        const ACTION_CSS = `
-.dsh-session-delete-action {
+        // The user bubble exposes no action slot, so the button is mounted into
+        // the message's own icon row (the row that already holds Copy) and
+        // styled exactly like the built-in icons.
+        const SLICE_CSS = `
+.dsh-session-slice-action {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -671,22 +671,46 @@ window.__ModuleLoader__.load({
   color: var(--dsw-alias-label-tertiary);
   cursor: pointer;
 }
-.dsh-session-delete-action svg {
+.dsh-session-slice-action svg {
   width: calc(15px + var(--dsh-content-font-delta, 0px));
   height: calc(15px + var(--dsh-content-font-delta, 0px));
 }
 @media (hover: hover) {
-  .dsh-session-delete-action:hover {
+  .dsh-session-slice-action:hover {
     background: var(--dsw-alias-interactive-bg-hover);
     color: var(--dsw-alias-label-secondary);
   }
+}
+.dsh-session-slice-tip {
+  position: absolute;
+  left: 50%;
+  top: calc(100% + 6px);
+  z-index: 40;
+  padding: 5px 9px;
+  border-radius: var(--dsw-radius-sm);
+  background: var(--dsw-alias-tooltip-bg);
+  color: var(--dsw-alias-tooltip-label);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, -2px);
+  transition: opacity 100ms ease, transform 100ms ease;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.24);
+}
+.dsh-session-slice-action:hover .dsh-session-slice-tip,
+.dsh-session-slice-action:focus-visible .dsh-session-slice-tip {
+  opacity: 1;
+  transform: translate(-50%, 0);
 }
 `;
 
         ctx.effect(() => {
           const element = document.createElement("style");
           element.id = "dsh-session-purger-actions";
-          element.textContent = ACTION_CSS;
+          element.textContent = SLICE_CSS;
           document.head.appendChild(element);
           return () => {
             element.remove();
@@ -694,55 +718,81 @@ window.__ModuleLoader__.load({
         }, "session-delete: action styles");
 
         /** Outline scissors glyph sized like the row's own icons. */
-        function ScissorsIcon() {
-          return h(
-            "svg",
-            {
-              viewBox: "0 0 20 20",
-              fill: "none",
-              stroke: "currentColor",
-              strokeWidth: 1.4,
-              strokeLinecap: "round",
-              strokeLinejoin: "round",
-              "aria-hidden": "true",
-              focusable: "false",
-            },
-            h("circle", { cx: 5.4, cy: 5, r: 2.4, key: "a" }),
-            h("circle", { cx: 5.4, cy: 15, r: 2.4, key: "b" }),
-            h("path", { d: "M7.4 6.7 16.4 15.4", key: "c" }),
-            h("path", { d: "M7.4 13.3 16.4 4.6", key: "d" }),
-          );
-        }
+        const SCISSORS_SVG = [
+          '<svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.4"',
+          ' stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">',
+          '<circle cx="5.4" cy="5" r="2.4"/>',
+          '<circle cx="5.4" cy="15" r="2.4"/>',
+          '<path d="M7.4 6.7 16.4 15.4"/>',
+          '<path d="M7.4 13.3 16.4 4.6"/>',
+          "</svg>",
+        ].join("");
 
-        /**
-         * Per-message entry in the assistant icon row: opens the slice picker on
-         * the turn this message closes.
-         */
-        function SliceAction({ messageId, sessionId, t }) {
-          return h(
-            "button",
-            {
-              type: "button",
-              className: "dsh-session-delete-action",
-              title: t("action.slice.hint"),
-              "aria-label": t("action.slice"),
-              onClick: () => {
-                openSliceAt(sessionId, messageId);
-              },
-            },
-            h(ScissorsIcon, null),
-          );
-        }
+        /** The conversation shown in the main surface, if any. */
+        const currentSessionId = () => {
+          let reference;
+          try {
+            reference = ctx.get("uiWorkspace")?.mainReference;
+          } catch {
+            return null;
+          }
+          const sessionId = reference?.sessionId;
+          return typeof sessionId === "string" && sessionId !== "" ? sessionId : null;
+        };
 
-        ctx.slots.inject("conversation.chat.assistant-actions", () => ctx.slots.register(
-          {
-            name: "conversation.chat.assistant-actions",
-            id: "session-delete.slice",
-            order: 20,
-            locale: NS,
-          },
-          SliceAction,
-        ));
+        const ACTION_CLASS = "dsh-session-slice-action";
+        const ROW_SELECTOR = '[data-chat-flow-kind="user"], [data-chat-flow-kind="steering"]';
+
+        /** Mount the slice button into one question row (idempotent). */
+        const decorateRow = (row) => {
+          const iconRow = row.querySelector('[data-clock="start"]');
+          if (iconRow === null || iconRow.querySelector(`.${ACTION_CLASS}`) !== null) return;
+          const turn = Number.parseInt(row.dataset.chatTurn ?? "", 10);
+          if (!Number.isInteger(turn) || turn <= 0) return;
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = ACTION_CLASS;
+          button.setAttribute("aria-label", tn("action.slice"));
+          button.innerHTML = SCISSORS_SVG;
+          const tip = document.createElement("span");
+          tip.className = "dsh-session-slice-tip";
+          tip.textContent = tn("action.slice.hint");
+          button.appendChild(tip);
+          button.addEventListener("click", (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            const sessionId = currentSessionId();
+            if (sessionId === null) return;
+            openSliceAtTurn(sessionId, turn);
+          });
+          iconRow.appendChild(button);
+        };
+
+        ctx.effect(() => {
+          if (typeof document === "undefined" || document.body === null) return undefined;
+          let frame = 0;
+          const scan = () => {
+            frame = 0;
+            for (const row of document.querySelectorAll(ROW_SELECTOR)) decorateRow(row);
+          };
+          const schedule = () => {
+            if (frame !== 0) return;
+            frame = typeof requestAnimationFrame === "function"
+              ? requestAnimationFrame(scan)
+              : setTimeout(scan, 32);
+          };
+          const observer = new MutationObserver(schedule);
+          observer.observe(document.body, { childList: true, subtree: true });
+          scan();
+          return () => {
+            observer.disconnect();
+            if (frame !== 0) {
+              if (typeof cancelAnimationFrame === "function") cancelAnimationFrame(frame);
+              clearTimeout(frame);
+            }
+            for (const button of document.querySelectorAll(`.${ACTION_CLASS}`)) button.remove();
+          };
+        }, "session-delete: message actions");
 
         ctx.effect(() => ctx.contextMenus.register({
           id: "session.delete",

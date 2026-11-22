@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Conversation cleanup",
-    "description": "Delete conversations, cut a slice of turns right from the message row, and purge every artifact a conversation left behind"
+    "description": "Delete conversations, cut a slice of turns starting from one of your own questions, and purge every artifact a conversation left behind"
   }
 }
