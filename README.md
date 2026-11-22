@@ -26,6 +26,8 @@ DSH 的会话菜单里只有“归档”。归档只是把对话从侧边栏藏�
 
   从第一轮开始裁会把整条对话清空，这种情况也会被拒绝（按钮禁用并提示改用右键菜单里的“删除对话”）—— 整条对话有它自己的删除动作。
 
+  删完立刻生效：如果这条对话正开在主面板里，插件会就地重建它的事件窗口，侧栏那行的标题与预览也会跟着重取，**不需要刷新页面**，看到的直接就是删完之后剩下的内容。
+
 删除前都会先停掉这条会话正在运行的 agent，免得一边写一边删。确认框是插件自带的小弹窗，不会弹系统那种 `window.confirm`。
 
 就连当前正显示在主面板里的那条对话也能删：删完这条对话会从主面板收起，重新打开就能看到剩下的内容。
@@ -80,7 +82,7 @@ Your question's icon row (right beside **Copy**):
 
 Every action stops any agent still running for that session first, so nothing keeps writing while the file is being rewritten. The confirmation is a small in-app dialog rather than a `window.confirm`.
 
-Even the conversation **currently displayed in the main pane** can be edited: after the cut it is closed from the pane, and reopening it shows what is left.
+The edit shows up the moment it lands: if the conversation is open in the main pane, its event window is rebuilt in place and the sidebar row's title and preview are re-read — **no page refresh**, you are looking at what is left.
 
 ### Install
 

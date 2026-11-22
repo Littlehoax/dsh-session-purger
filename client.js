@@ -53,7 +53,7 @@ window.__ModuleLoader__.load({
       "slice.compacted": "已压缩",
       "slice.compacted-hint": "选中范围内有已被压缩摘要覆盖的轮次，可能无法安全删除。",
       "slice.summary": "将删除 {count} 轮（第 {from}–{to} 轮）。",
-      "slice.close-hint": "删除后这条对话会关闭，重新打开就能看到结果。",
+      "slice.close-hint": "删除后这条对话会立刻更新，不需要刷新。",
       "slice.wipes": "从这里删会把整条对话清空。要整条删除，请用右键菜单里的「删除对话」。",
       "dialog.cancel": "取消",
       "dialog.untitled": "未命名对话",
@@ -105,7 +105,7 @@ window.__ModuleLoader__.load({
       "slice.compacted": "compacted",
       "slice.compacted-hint": "The selected slice contains turns covered by a compaction summary and may not be removable.",
       "slice.summary": "{count} turn(s) will be removed (turns {from}–{to}).",
-      "slice.close-hint": "This conversation closes after the edit; reopen it to see the result.",
+      "slice.close-hint": "The conversation updates as soon as the edit lands; no refresh needed.",
       "slice.wipes": "Starting at the first turn would empty this conversation. To delete it entirely, use \"Delete conversation\" in the context menu.",
       "dialog.cancel": "Cancel",
       "dialog.untitled": "Untitled conversation",
@@ -323,6 +323,41 @@ window.__ModuleLoader__.load({
           }
         };
 
+        /**
+         * Show an edited conversation in place, without a page refresh: the
+         * rewritten log is already on disk, so rebuild the open Session's event
+         * window from it and refresh the row that lists it.
+         */
+        const revealEdit = async (sessionId) => {
+          const sessions = ctx.get("sessions");
+          if (sessions !== undefined) {
+            try {
+              await sessions.refreshProjections?.(sessionId);
+            } catch (error) {
+              console.warn("session-delete: projection reload failed", error);
+            }
+            try {
+              await sessions.refresh?.();
+            } catch (error) {
+              console.warn("session-delete: list reload failed", error);
+            }
+          }
+          const uiWorkspace = ctx.get("uiWorkspace");
+          if (uiWorkspace?.mainReference?.sessionId !== sessionId) return;
+          const session = sessions?.binding?.(sessionId)?.session;
+          if (session !== undefined && typeof session.resync === "function") {
+            try {
+              await session.resync();
+              return;
+            } catch (error) {
+              console.warn("session-delete: history reload failed", error);
+            }
+          }
+          if (typeof uiWorkspace.clearMain !== "function" || typeof uiWorkspace.openSession !== "function") return;
+          uiWorkspace.clearMain();
+          uiWorkspace.openSession(sessionId);
+        };
+
         const openDelete = (sessionId, displayTitle) => {
           if (typeof sessionId !== "string" || sessionId === "") return;
           publish({
@@ -405,15 +440,17 @@ window.__ModuleLoader__.load({
 
           if (current === null) return null;
 
-          const finish = () => {
-            releaseMain(current.sessionId);
+          const finish = (keepOpen = false) => {
+            if (!keepOpen) releaseMain(current.sessionId);
             publish(null);
           };
-          const attempt = async (action) => {
+          const attempt = async (action, reveal = false) => {
+            const target = current.sessionId;
             publish({ ...request, phase: "deleting", message: "" });
             try {
               await action();
-              finish();
+              if (reveal) await revealEdit(target);
+              finish(reveal);
             } catch (error) {
               if (request === null) return;
               publish({ ...request, phase: "confirm", message: errorText(t, error) });
@@ -432,12 +469,14 @@ window.__ModuleLoader__.load({
             if (current.mode === "tail") {
               return attempt(
                 () => call("truncate", { targetSessionId: current.sessionId, cutTurn: from }),
+                true,
               );
             }
             const to = current.to;
             if (typeof to !== "number") return;
             return attempt(
               () => call("removeRange", { targetSessionId: current.sessionId, fromTurn: from, toTurn: to }),
+              true,
             );
           };
 
