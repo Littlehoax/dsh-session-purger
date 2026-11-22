@@ -1,7 +1,7 @@
 # dsh-session-purger
 
-Delete conversations, trim a slice of their turns, and purge the files they own from the DSH Web sidebar.
-从 DSH Web 侧边栏里删除对话、删掉对话里的某一段，并清理这条对话留下的全部产物。
+Delete conversations, trim a slice of their turns from the message row, and purge the files they own in the DSH Web sidebar.
+从 DSH Web 侧边栏里删除对话、在消息上裁掉对话里的某一段，并清理这条对话留下的全部产物。
 
 ## 中文
 
@@ -9,11 +9,16 @@ Delete conversations, trim a slice of their turns, and purge the files they own 
 
 DSH 的会话菜单里只有“归档”。归档只是把对话从侧边栏藏起来，磁盘上的记录还在。
 
-这个插件在会话的“…”菜单里补了三项：
+这个插件补了两处入口：会话“…”菜单里的两项，以及每条 AI 回复下方图标行里的一个剪刀按钮。
+
+会话“…”菜单：
 
 - **删除对话** —— 整个对话从侧边栏消失，会话记录也从磁盘移除。
 - **删除对话和全部产物** —— 在上一项的基础上，再清掉这条对话在 DSH 数据目录里留下的一切：会话记录、投影缓存（`storages/session_projcache`）、回收站里残留的副本，以及只有这条对话引用的附件对象。工作区里由对话产生的文件不动。删除前会先列一份清单，写清每一项占多少空间，确认后才动手。
-- **删除指定片段…** —— 只删掉对话里的某几轮，其余内容保留：
+
+消息图标行（就在“复制”旁边）：
+
+- **剪刀按钮：删除这一段对话** —— 每条 AI 回复下方都有，点它打开片段选择器，并自动选中这条回复所属的那一轮。只删掉对话里的某几轮，其余内容保留：
   - **删到末尾**：选中一轮，它和之后的所有轮次都删掉（回到那一轮之前的状态）。
   - **删除中间一段**：选中起始和结束两轮，只删这一段，后面的对话接上继续。
 
@@ -37,7 +42,8 @@ DSH 的会话菜单里只有“归档”。归档只是把对话从侧边栏藏�
 
 - **删除对话** → 确认。
 - **删除对话和全部产物** → 看一眼清单 → 确认。
-- **删除指定片段…** → 选「删到末尾」或「删除中间一段」→ 点选轮次 → 确认。
+
+片段删除在消息上：把鼠标移到任意一条 AI 回复，图标行里“复制”旁边会出现剪刀按钮，点开选「删到末尾」或「删除中间一段」→ 点选轮次 → 确认。
 
 删掉就没了，没有撤销，也没有回收站。删之前想清楚。
 
@@ -53,11 +59,16 @@ MIT 许可。
 
 DSH's session menu can archive a conversation, but archiving only hides it from the sidebar — the log stays on disk.
 
-This plugin adds three actions to the session `…` menu:
+This plugin adds two entry points: two items in the session `…` menu, and one button in the icon row under every AI reply.
+
+Session `…` menu:
 
 - **Delete conversation** — the row disappears from the sidebar immediately and the session log is removed from disk.
 - **Delete conversation and artifacts** — the same, plus everything that conversation owns inside the DSH data directory: its log, its projection cache row (`storages/session_projcache`), leftover copies in the trash folder, and the attachment objects only it references. Files the conversation produced in your workspace are left alone. A summary is shown first, with the size of each item, and nothing is removed until you confirm.
-- **Delete part of the conversation…** — removes a few turns and keeps the rest:
+
+Message icon row (right beside **Copy**):
+
+- **Scissors: delete part of this conversation** — present under every AI reply; it opens the slice picker with the turn that reply closes already selected. A few turns are removed and the rest kept:
   - **Cut to the end**: pick a turn and it plus every later turn is removed, taking the conversation back to just before it.
   - **Remove a middle slice**: pick the first and the last turn of the block; the later turns move up to follow the earlier ones.
 
@@ -81,7 +92,8 @@ Session `…` menu:
 
 - **Delete conversation** → confirm.
 - **Delete conversation and artifacts** → review the summary → confirm.
-- **Delete part of the conversation…** → choose *Cut to the end* or *Remove a middle slice* → pick the turns → confirm.
+
+Slice removal lives on the message: hover any AI reply and a scissors button appears next to **Copy** in its icon row. Click it, choose *Cut to the end* or *Remove a middle slice* → pick the turns → confirm.
 
 Once deleted, it's gone — no undo and no trash bin. Make sure that's what you want.
 

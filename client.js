@@ -1,14 +1,14 @@
 /**
- * Client half: three Session context-menu actions and the dialogs that confirm
- * them.
+ * Client half: two Session context-menu actions, one per-message action, and the
+ * dialogs that confirm them.
  *
  *  - "Delete conversation"      → `sessionDelete/delete`
  *  - "Delete conversation and artifacts" → `sessionDelete/artifacts` preview,
  *                                  then `sessionDelete/purge`
- *  - "Delete part of the conversation"   → `sessionDelete/outlines` picker,
- *                                  then `sessionDelete/truncate` (cut to the
- *                                  end) or `sessionDelete/removeRange` (an
- *                                  interior slice)
+ *  - The scissors button in each assistant message's icon row (beside Copy)
+ *                                 → `sessionDelete/outlines` picker, then
+ *                                  `sessionDelete/truncate` (cut to the end) or
+ *                                  `sessionDelete/removeRange` (an interior slice)
  *
  * The Sidebar drops a row when the Host announces `api-session/removed`.
  */
@@ -22,7 +22,8 @@ window.__ModuleLoader__.load({
     const zh = {
       "menu.delete": "删除对话",
       "menu.purge": "删除对话和全部产物",
-      "menu.slice": "删除指定片段…",
+      "action.slice": "删除这一段对话",
+      "action.slice.hint": "从本轮开始删到末尾",
       "delete.title": "删除对话？",
       "delete.body": "“{title}”将从此设备删除，且无法恢复。",
       "delete.hint": "对话记录会从本机永久移除。",
@@ -52,7 +53,7 @@ window.__ModuleLoader__.load({
       "slice.compacted": "已压缩",
       "slice.compacted-hint": "选中范围内有已被压缩摘要覆盖的轮次，可能无法安全删除。",
       "slice.summary": "将删除 {count} 轮（第 {from}–{to} 轮）。",
-      "slice.open-hint": "这条对话正在打开状态，请先切换到别的对话再删除片段。",
+      "slice.close-hint": "删除后这条对话会关闭，重新打开就能看到结果。",
       "dialog.cancel": "取消",
       "dialog.untitled": "未命名对话",
       "dialog.delete": "删除",
@@ -72,7 +73,8 @@ window.__ModuleLoader__.load({
     const en = {
       "menu.delete": "Delete conversation",
       "menu.purge": "Delete conversation and artifacts",
-      "menu.slice": "Delete part of the conversation…",
+      "action.slice": "Delete part of this conversation",
+      "action.slice.hint": "Remove this turn and everything after it",
       "delete.title": "Delete conversation?",
       "delete.body": "“{title}” will be deleted from this device. This cannot be undone.",
       "delete.hint": "The conversation history is removed permanently.",
@@ -102,7 +104,7 @@ window.__ModuleLoader__.load({
       "slice.compacted": "compacted",
       "slice.compacted-hint": "The selected slice contains turns covered by a compaction summary and may not be removable.",
       "slice.summary": "{count} turn(s) will be removed (turns {from}–{to}).",
-      "slice.open-hint": "This conversation is open. Switch to another conversation before removing turns.",
+      "slice.close-hint": "This conversation closes after the edit; reopen it to see the result.",
       "dialog.cancel": "Cancel",
       "dialog.untitled": "Untitled conversation",
       "dialog.delete": "Delete",
@@ -337,12 +339,16 @@ window.__ModuleLoader__.load({
           })();
         };
 
-        const openSlice = (sessionId, displayTitle) => {
+        /**
+         * Open the slice picker for one conversation, pre-selecting the turn of
+         * the message whose action row was clicked.
+         */
+        const openSliceAt = (sessionId, messageId) => {
           if (typeof sessionId !== "string" || sessionId === "") return;
           publish({
             kind: "slice",
             sessionId,
-            title: typeof displayTitle === "string" ? displayTitle : "",
+            title: "",
             phase: "loading",
             message: "",
             mode: "tail",
@@ -353,7 +359,12 @@ window.__ModuleLoader__.load({
           void (async () => {
             try {
               const outline = await call("outlines", { targetSessionId: sessionId });
-              patch("slice", sessionId, { outline, phase: "confirm" });
+              let from = null;
+              if (typeof messageId === "string" && messageId !== "") {
+                const match = outline.turns.find((turn) => turn.messageId === messageId);
+                if (match !== undefined) from = match.turn;
+              }
+              patch("slice", sessionId, { outline, from, phase: "confirm" });
             } catch (error) {
               patch("slice", sessionId, { phase: "confirm", message: errorText(tn, error) });
             }
@@ -486,7 +497,6 @@ window.__ModuleLoader__.load({
             };
             const picked = turns.filter((turn) => selected(turn.turn));
             const compacted = picked.some((turn) => turn.compacted);
-            const isOpen = ctx.get("uiWorkspace")?.mainReference?.sessionId === current.sessionId;
             return h(
               "div",
               { style: { display: "flex", flexDirection: "column", gap: 8 } },
@@ -548,7 +558,7 @@ window.__ModuleLoader__.load({
                 )
                 : null,
               compacted ? h("p", { style: warnStyle }, t("slice.compacted-hint")) : null,
-              isOpen ? h("p", { style: warnStyle }, t("slice.open-hint")) : null,
+              h("p", { style: hintStyle }, t("slice.close-hint")),
             );
           };
 
@@ -573,15 +583,12 @@ window.__ModuleLoader__.load({
             slice: busy ? t("dialog.slicing") : t("dialog.delete"),
           };
           const runners = { delete: runDelete, purge: runPurge, slice: runSlice };
-          const openHere = current.kind === "slice"
-            && ctx.get("uiWorkspace")?.mainReference?.sessionId === current.sessionId;
           const actionable = current.kind === "delete"
             ? current.phase === "confirm"
             : current.phase === "confirm" && (
               current.kind === "purge"
                 ? current.plan !== null
-                : !openHere
-                  && current.outline !== null
+                : current.outline !== null
                   && current.from !== null
                   && (current.mode === "tail" || current.to !== null)
             );
@@ -650,6 +657,93 @@ window.__ModuleLoader__.load({
           );
         });
 
+        const ACTION_CSS = `
+.dsh-session-delete-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(28px + var(--dsh-content-font-delta, 0px));
+  height: calc(28px + var(--dsh-content-font-delta, 0px));
+  padding: 6px;
+  border: none;
+  border-radius: var(--dsw-radius-sm);
+  background: transparent;
+  color: var(--dsw-alias-label-tertiary);
+  cursor: pointer;
+}
+.dsh-session-delete-action svg {
+  width: calc(15px + var(--dsh-content-font-delta, 0px));
+  height: calc(15px + var(--dsh-content-font-delta, 0px));
+}
+@media (hover: hover) {
+  .dsh-session-delete-action:hover {
+    background: var(--dsw-alias-interactive-bg-hover);
+    color: var(--dsw-alias-label-secondary);
+  }
+}
+`;
+
+        ctx.effect(() => {
+          const element = document.createElement("style");
+          element.id = "dsh-session-purger-actions";
+          element.textContent = ACTION_CSS;
+          document.head.appendChild(element);
+          return () => {
+            element.remove();
+          };
+        }, "session-delete: action styles");
+
+        /** Outline scissors glyph sized like the row's own icons. */
+        function ScissorsIcon() {
+          return h(
+            "svg",
+            {
+              viewBox: "0 0 20 20",
+              fill: "none",
+              stroke: "currentColor",
+              strokeWidth: 1.4,
+              strokeLinecap: "round",
+              strokeLinejoin: "round",
+              "aria-hidden": "true",
+              focusable: "false",
+            },
+            h("circle", { cx: 5.4, cy: 5, r: 2.4, key: "a" }),
+            h("circle", { cx: 5.4, cy: 15, r: 2.4, key: "b" }),
+            h("path", { d: "M7.4 6.7 16.4 15.4", key: "c" }),
+            h("path", { d: "M7.4 13.3 16.4 4.6", key: "d" }),
+          );
+        }
+
+        /**
+         * Per-message entry in the assistant icon row: opens the slice picker on
+         * the turn this message closes.
+         */
+        function SliceAction({ messageId, sessionId, t }) {
+          return h(
+            "button",
+            {
+              type: "button",
+              className: "dsh-session-delete-action",
+              title: t("action.slice.hint"),
+              "aria-label": t("action.slice"),
+              onClick: () => {
+                openSliceAt(sessionId, messageId);
+              },
+            },
+            h(ScissorsIcon, null),
+          );
+        }
+
+        ctx.slots.inject("conversation.chat.assistant-actions", () => ctx.slots.register(
+          {
+            name: "conversation.chat.assistant-actions",
+            id: "session-delete.slice",
+            order: 20,
+            locale: NS,
+          },
+          SliceAction,
+        ));
+
         ctx.effect(() => ctx.contextMenus.register({
           id: "session.delete",
           target: "session",
@@ -670,12 +764,6 @@ window.__ModuleLoader__.load({
               icon: { key: "workspace.delete" },
               danger: true,
               run: () => openPurge(target.sessionId, target.displayTitle),
-            },
-            {
-              id: "slice",
-              label: ctx.locale.bind(NS)("menu.slice"),
-              icon: { key: "workspace.rename" },
-              run: () => openSlice(target.sessionId, target.displayTitle),
             },
           ],
         }), "session-delete: menu");

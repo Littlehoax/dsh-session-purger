@@ -504,6 +504,7 @@ class SessionDeleteService {
       let prompt = "";
       let answer = "";
       let compacted = false;
+      let messageId = null;
       for (let index = span.start; index < span.end; index += 1) {
         const event = read.events[index];
         if (shadowed.has(event.seq)) compacted = true;
@@ -511,6 +512,7 @@ class SessionDeleteService {
         if (event.type === "assistant/message") {
           const text = textOf(event.data?.message);
           if (text !== "") answer = clip(text);
+          if (typeof event.data?.message?.id === "string") messageId = event.data.message.id;
         }
       }
       return {
@@ -521,6 +523,7 @@ class SessionDeleteService {
         prompt,
         answer,
         compacted,
+        messageId,
       };
     });
     return {
