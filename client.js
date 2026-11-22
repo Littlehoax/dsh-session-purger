@@ -54,6 +54,7 @@ window.__ModuleLoader__.load({
       "slice.compacted-hint": "选中范围内有已被压缩摘要覆盖的轮次，可能无法安全删除。",
       "slice.summary": "将删除 {count} 轮（第 {from}–{to} 轮）。",
       "slice.close-hint": "删除后这条对话会关闭，重新打开就能看到结果。",
+      "slice.wipes": "从这里删会把整条对话清空。要整条删除，请用右键菜单里的「删除对话」。",
       "dialog.cancel": "取消",
       "dialog.untitled": "未命名对话",
       "dialog.delete": "删除",
@@ -105,6 +106,7 @@ window.__ModuleLoader__.load({
       "slice.compacted-hint": "The selected slice contains turns covered by a compaction summary and may not be removable.",
       "slice.summary": "{count} turn(s) will be removed (turns {from}–{to}).",
       "slice.close-hint": "This conversation closes after the edit; reopen it to see the result.",
+      "slice.wipes": "Starting at the first turn would empty this conversation. To delete it entirely, use \"Delete conversation\" in the context menu.",
       "dialog.cancel": "Cancel",
       "dialog.untitled": "Untitled conversation",
       "dialog.delete": "Delete",
@@ -174,6 +176,19 @@ window.__ModuleLoader__.load({
         unit += 1;
       }
       return `${scaled >= 10 ? Math.round(scaled) : scaled.toFixed(1)} ${units[unit]}`;
+    };
+
+    /**
+     * Whether the picked slice would remove every turn, leaving an empty
+     * conversation behind. Such an edit is refused on both sides: the whole
+     * conversation has its own delete action.
+     */
+    const wipesConversation = (mode, from, to, turns) => {
+      if (from === null || turns.length === 0) return false;
+      const first = turns[0].turn;
+      const last = turns[turns.length - 1].turn;
+      if (mode === "tail") return from <= first;
+      return to !== null && from <= first && to >= last;
     };
 
     const backdropStyle = {
@@ -554,6 +569,9 @@ window.__ModuleLoader__.load({
                 )
                 : null,
               compacted ? h("p", { style: warnStyle }, t("slice.compacted-hint")) : null,
+              wipesConversation(current.mode, current.from, current.to, turns)
+                ? h("p", { style: warnStyle }, t("slice.wipes"))
+                : null,
               h("p", { style: hintStyle }, t("slice.close-hint")),
             );
           };
@@ -579,6 +597,9 @@ window.__ModuleLoader__.load({
             slice: busy ? t("dialog.slicing") : t("dialog.delete"),
           };
           const runners = { delete: runDelete, purge: runPurge, slice: runSlice };
+          const sliceTurns = current.kind === "slice" && current.outline !== null ? current.outline.turns : [];
+          const wipes = current.kind === "slice"
+            && wipesConversation(current.mode, current.from, current.to, sliceTurns);
           const actionable = current.kind === "delete"
             ? current.phase === "confirm"
             : current.phase === "confirm" && (
@@ -587,6 +608,7 @@ window.__ModuleLoader__.load({
                 : current.outline !== null
                   && current.from !== null
                   && (current.mode === "tail" || current.to !== null)
+                  && !wipes
             );
 
           return h(

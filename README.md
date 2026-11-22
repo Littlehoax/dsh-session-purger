@@ -24,6 +24,8 @@ DSH 的会话菜单里只有“归档”。归档只是把对话从侧边栏藏�
 
   片段删除会把这条对话的记录就地重写：事件序号重新连续，引用关系（压缩摘要覆盖的范围、工具调用改写、开发者消息引用的请求头）会跟着重映射。如果选中的片段已经被压缩摘要覆盖、无法安全重写，插件会拒绝并说明原因，不会删坏记录。
 
+  从第一轮开始裁会把整条对话清空，这种情况也会被拒绝（按钮禁用并提示改用右键菜单里的“删除对话”）—— 整条对话有它自己的删除动作。
+
 删除前都会先停掉这条会话正在运行的 agent，免得一边写一边删。确认框是插件自带的小弹窗，不会弹系统那种 `window.confirm`。
 
 就连当前正显示在主面板里的那条对话也能删：删完这条对话会从主面板收起，重新打开就能看到剩下的内容。
@@ -73,6 +75,8 @@ Your question's icon row (right beside **Copy**):
   - **Remove a middle slice**: pick the first and the last turn of the block; the later turns move up to follow the earlier ones.
 
   A slice edit rewrites the log in place: sequence numbers are made contiguous again and every seq-keyed reference is remapped (compaction shadow ranges, tool rewrites, developer-message header cites). If the chosen slice is already covered by a compaction summary and cannot be rewritten safely, the plugin refuses and says why instead of corrupting the log.
+
+  Cutting from the first turn would empty the conversation, so that edit is refused too — the confirm button stays disabled and points at **Delete conversation** in the context menu, which is the action meant for removing a whole conversation.
 
 Every action stops any agent still running for that session first, so nothing keeps writing while the file is being rewritten. The confirmation is a small in-app dialog rather than a `window.confirm`.
 

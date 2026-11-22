@@ -401,12 +401,12 @@ function buildEdited(events, selection, inheritedEventCount) {
     throw new RemoteFailure("session-delete/range", "Inherited history cannot be removed.");
   }
   if (selection.toTurn === undefined || selection.toTurn === null) {
-    if (first.start === 0) {
-      throw new RemoteFailure("session-delete/range", "At least the first turn must be kept.");
-    }
     const kept = events.slice(0, first.start);
-    if (kept.length === 0) {
-      throw new RemoteFailure("session-delete/range", "At least the first turn must be kept.");
+    if (kept.length === 0 || turnSpans(kept).length === 0) {
+      throw new RemoteFailure(
+        "session-delete/range",
+        "Removing this turn would leave the conversation empty; delete the whole conversation instead.",
+      );
     }
     validateChain(kept);
     return kept;
@@ -422,14 +422,17 @@ function buildEdited(events, selection, inheritedEventCount) {
   const end = last.end;
   const head = events.slice(0, start);
   const tail = events.slice(end);
-  if (head.length === 0 && tail.length === 0) {
-    throw new RemoteFailure("session-delete/range", "Deleting every turn is not a slice edit.");
-  }
   const shift = end - start;
   const kept = head.concat(tail.map((event, offset) => {
     const remapped = remapReferences(event, start, end, shift);
     return { ...remapped, seq: start + offset };
   }));
+  if (kept.length === 0 || turnSpans(kept).length === 0) {
+    throw new RemoteFailure(
+      "session-delete/range",
+      "Removing these turns would leave the conversation empty; delete the whole conversation instead.",
+    );
+  }
   validateChain(kept);
   return kept;
 }
@@ -476,13 +479,15 @@ class SessionDeleteService {
       throw new RemoteFailure("session-delete/io-failed", "The conversation files could not be located.");
     }
     await this.removeLog(id, directory, sessionRoot);
+    const cache = await this.dropProjectionCache(id);
+    const trash = await this.clearTrash(id, sessionRoot);
     if (!announced) this.ctx.emit("api-session/removed", id);
     try {
       await this.ctx.get("workspaceRegistry")?.unpinSession?.(id);
     } catch {
       // A missing pin is not a deletion failure.
     }
-    return { deleted: true, sessionId: id };
+    return { deleted: true, sessionId: id, cache, trash };
   }
 
   /**
@@ -972,6 +977,21 @@ class SessionDeleteService {
       }
     }
     return found;
+  }
+
+  /** Remove the trash entries this conversation left behind. */
+  async clearTrash(id, sessionRoot) {
+    const residue = await this.trashResidue(id, sessionRoot);
+    let removed = 0;
+    for (const entry of residue) {
+      try {
+        await fsp.rm(entry.path, { recursive: true, force: true, maxRetries: 2, retryDelay: 100 });
+        removed += 1;
+      } catch {
+        // A locked leftover can be retried by a later delete.
+      }
+    }
+    return removed;
   }
 
   /** Recursive byte size of a file or directory tree. */

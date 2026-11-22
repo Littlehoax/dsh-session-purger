@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-purger",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "description": "Delete conversations, cut a slice of turns starting from one of your own questions, and purge the artifacts a conversation left behind in the DSH sidebar.",
   "type": "module",
   "license": "MIT",
