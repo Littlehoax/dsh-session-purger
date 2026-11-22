@@ -1,6 +1,6 @@
 {
   "meta": {
-    "title": "Session delete",
-    "description": "Delete conversations from the sidebar"
+    "title": "Conversation cleanup",
+    "description": "Delete conversations, remove a slice of turns, and purge every artifact a conversation left behind"
   }
 }

@@ -1,7 +1,7 @@
 {
   "name": "dsh-session-purger",
-  "version": "0.1.2",
-  "description": "Permanently delete conversations from the DSH Web sidebar.",
+  "version": "0.2.0",
+  "description": "Delete conversations, trim a slice of their turns, and purge the artifacts they own from the DSH sidebar.",
   "type": "module",
   "license": "MIT",
   "keywords": [
@@ -10,7 +10,9 @@
     "plugin",
     "session",
     "conversation",
-    "delete"
+    "delete",
+    "truncate",
+    "artifacts"
   ],
   "repository": {
     "type": "git",
@@ -34,7 +36,8 @@
     "client.js",
     "cordis.patch.yml",
     "locale/*.json",
-    "icon.svg"
+    "icon.svg",
+    "CHANGELOG.md"
   ],
   "dsh": {
     "bundle": {
